@@ -1,0 +1,94 @@
+import axios from 'axios';
+import { loginFailure, loginStart, loginSuccess, registerFailure, registerStart, registerSuccess, logoutStart, logoutSuccess, logoutFailure } from './authSlice';
+import { deleteUserFailure, deleteUserStart, deleteUserSuccess, getUsersFailure, getUsersStart, getUsersSuccess } from './userSlice';
+
+import Cookies from "js-cookie";
+import axiosInstanceInterceptor from "./axiosInstance";
+
+const API_BASE_URL = "https://localhost:7099";
+const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+    headers: { "Content-Type": "application/json" }
+});
+
+// // Hàm xử lý lỗi chung
+const handleError = (error, dispatch, failureAction) => {
+    console.error(error.response ? error.response.data : error.message);
+    dispatch(failureAction());
+};
+
+// Đăng nhập người dùng
+export const loginUser = async (user, dispatch, navigate) => {
+    dispatch(loginStart());
+    try {
+        const res = await axiosInstance.post("/api/User/Login", user);
+        dispatch(loginSuccess(res.data));
+
+        if (res.data.statusCode === 200) {
+            const { accessToken, refreshToken } = res.data;
+            Cookies.set("accessToken", accessToken, { secure: true, sameSite: "Strict" });
+            Cookies.set("refreshToken", refreshToken, { secure: true, sameSite: "Strict" });
+            navigate("/");
+        } else {
+            navigate("/login");
+        }
+    } catch (err) {
+        handleError(err, dispatch, loginFailure);
+    }
+};
+
+// Đăng ký người dùng
+export const registerUser = async (user, dispatch, navigate) => {
+    dispatch(registerStart());
+    try {
+        const res = await axiosInstance.post('/api/User/Register', user);
+        dispatch(registerSuccess(res.data));
+        if (res.statusCode === 200) {
+            navigate("/login");
+        }
+    } catch (err) {
+        handleError(err, dispatch, registerFailure);
+    }
+};
+
+// logout
+// const res = await axiosInstance.post("/api/User/Logout", token); token gửi trực tiếp trong body của request. Backend nhận dưới dạng 1 chuỗi JSON(nếu token là chuỗi).
+// const res = await axiosInstance.post("/api/User/Logout", token); { token } là một object JS, chuyển thành JSON khi gửi đi, có cấu trúc key-value trong body.
+export const logout = async (token, dispatch, navigate) => {
+    dispatch(logoutStart());
+
+    try {
+        const res = await axiosInstance.post("/api/User/Logout", token);
+        console.log(res.data)
+        dispatch(logoutSuccess(res.data));
+        if (res.data.statusCode === 200) {
+            Cookies.remove("accessToken");
+            Cookies.remove("refreshToken");
+            navigate("/login");
+        }
+    } catch (err) {
+        handleError(err, dispatch, logoutFailure);
+    }
+};
+
+// Lấy tất cả người dùng
+export const getAllUsers = async (dispatch) => {
+    dispatch(getUsersStart());
+    try {
+        const res = await axiosInstanceInterceptor.get("/api/User/GetAllUser");
+        dispatch(getUsersSuccess(res.data));
+    } catch (err) {
+        handleError(err, dispatch, getUsersFailure);
+    }
+};
+
+// Xóa người dùng
+export const deleteUser = async (dispatch, id) => {
+    dispatch(deleteUserStart());
+    try {
+        const res = await axiosInstanceInterceptor.delete(`/api/User/Delete/${id}`);
+        dispatch(deleteUserSuccess(res.data));
+    } catch (err) {
+        handleError(err, dispatch, deleteUserFailure);
+    }
+};
