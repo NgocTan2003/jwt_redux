@@ -52,8 +52,6 @@ export const registerUser = async (user, dispatch, navigate) => {
 };
 
 // logout
-// const res = await axiosInstance.post("/api/User/Logout", token); token gửi trực tiếp trong body của request. Backend nhận dưới dạng 1 chuỗi JSON(nếu token là chuỗi).
-// const res = await axiosInstance.post("/api/User/Logout", token); { token } là một object JS, chuyển thành JSON khi gửi đi, có cấu trúc key-value trong body.
 export const logout = async (token, dispatch, navigate) => {
     dispatch(logoutStart());
 
